@@ -1,6 +1,17 @@
 breed [dailys daily]
 breed [weeklys weekly]
 
+turtles-own [ go-to-store store1-pref store2-pref]
+
+globals [
+  store1-patches
+  store2-patches
+  world-patches
+
+  store1-products
+  store2-products
+
+]
 
 to setup
   clear-all
@@ -8,13 +19,19 @@ to setup
   ask patches [
     set pcolor grey
   ]
+  set store1-products []
+  set store2-products []
 
-  ask patches [
-    if (pxcor > 0 and pxcor < 20 and pycor > 15 and pycor < 25)
-      [ set pcolor red ]
-    if (pxcor > -20 and pxcor < 0 and pycor > 15 and pycor < 25)
-    [set pcolor blue]
-  ]
+  set store1-patches patches with [pxcor > 0 and pxcor < 20 and pycor > 15 and pycor < 25]
+  set store2-patches patches with [pxcor > -20 and pxcor < 0 and pycor > 15 and pycor < 25]
+
+  ask store1-patches [ set pcolor red ]
+  ask store2-patches [ set pcolor blue ]
+
+  set world-patches patches with [ ((pxcor < -20 or pxcor > 20)) or pycor < 15]
+
+  ask world-patches [set pcolor approximate-rgb 110 110 110]
+
 
   set-default-shape dailys "person"
   set-default-shape weeklys "person"
@@ -22,30 +39,76 @@ to setup
   create-dailys num-daily-shoppers
   create-weeklys num-weekly-shoppers
 
+  let x 0
+  while [x < num_product]
+  [
+    set store1-products lput quantity-of-product store1-products
+    set store2-products lput quantity-of-product store2-products
+    set x x + 1
+  ]
+
   ask dailys [
-    setxy random-xcor random-ycor
-    if (xcor > -20 and xcor < 20 and pycor > 15 and pycor < 25 )
-    [setxy random-xcor (random -25) ]
+
+    move-to one-of world-patches
     set color approximate-rgb 255 223 196
+    set go-to-store .333
+    set store1-pref 1
+    set store2-pref 1
   ]
 
   ask weeklys [
-    setxy random-xcor random-ycor
-    if (xcor > -20 and xcor < 20 and pycor > 15 and pycor < 25 )
-    [setxy random-xcor (random -25) ]
-    set color approximate-rgb 225 184 153
 
+    move-to one-of world-patches
+    set color approximate-rgb 225 184 153
+    set go-to-store .05
+    set store1-pref 1
+    set store2-pref 1
+  ]
+end
+
+to go
+
+  ask turtles [
+    print random-float 1.0
+    ifelse (random-float 1.0 < go-to-store) [
+      ;; huff model for 2 stores
+      let numer ( store1-pref / distance-from-store1( [who] of self ))
+      let denom ( (store1-pref / distance-from-store1( [who] of self)) + (store2-pref / distance-from-store2([who] of self)))
+      let prob ( numer / denom )
+    ;;  print prob
+
+      ifelse (random-float 1.0 < prob)
+      [move-to one-of store1-patches]
+      [move-to one-of store2-patches]
+    ]
+    [ ;;print go-to-store
+      move-to one-of world-patches]
   ]
 
 
+end
 
+to-report distance-from-store1[id]
+  let dist 0
+  ask turtle id [
+     set dist distancexy -20 15
+  ]
+  report dist
+end
+
+to-report distance-from-store2[id]
+  let dist 0
+  ask turtle id [
+    set dist distancexy 20 15
+  ]
+  report dist
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 361
 26
-1689
-709
+1682
+698
 -1
 -1
 13.0
@@ -88,8 +151,8 @@ SLIDER
 108
 195
 141
-quantity_of_product
-quantity_of_product
+quantity-of-product
+quantity-of-product
 0
 100
 50.0
@@ -143,12 +206,12 @@ SLIDER
 21
 281
 204
-316
+314
 num-daily-shoppers
 num-daily-shoppers
 0
 200
-100.0
+0.0
 1
 1
 NIL
@@ -175,16 +238,55 @@ SLIDER
 26
 340
 221
-375
+373
 num-weekly-shoppers
 num-weekly-shoppers
 0
 200
-100.0
+1.0
 1
 1
 NIL
 HORIZONTAL
+
+MONITOR
+55
+473
+223
+519
+NIL
+distance-from-store1(1)
+17
+1
+11
+
+MONITOR
+55
+535
+223
+581
+NIL
+distance-from-store2(1)
+17
+1
+11
+
+BUTTON
+195
+408
+260
+443
+NIL
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
